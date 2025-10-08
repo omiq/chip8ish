@@ -29,7 +29,7 @@ unsigned int stack[16];
 // Original: 64x32-pixel monochrome display
 // Super Chip-48: 128x64
 unsigned char screen[(128*64)/8];
-bool redraw = 0; // Should update the screen
+bool redraw = false; // Should update the screen
 
 // Chip-8 timers: delay and sound
 unsigned int Tdelay, Tsound;
@@ -235,10 +235,12 @@ void parser(int instruction) {
 
     // Clear the screen    
     case 0x00E0: 
+        clear_screen();
         break;
     
     // 0xDXYN Draw a sprite
     case 0xD000:
+        redraw = true; 
         break;
     
     // ..............................................
@@ -266,12 +268,25 @@ void parser(int instruction) {
 
 }
 
+void clear_screen() {
+    
+    unsigned char i=0;
+    // Here we will update the screen
+    // for now use characters
+    for(i=0; i<sizeof(screen)/8; i++)
+    {
+        screen[i]=0;
+    };
+
+    redraw = false; 
+}
+
 void update_screen() {
     
     unsigned char x,y,i=0;
     // Here we will update the screen
     // for now use characters
-    for(i=0; i<sizeof(screen); i++)
+    for(i=0; i<sizeof(screen)/8; i++)
     {
         printf("%c%c%c%c%c%c%c%c",
         ((screen[i]) & 128 ? '1' : '0'), 
@@ -284,6 +299,7 @@ void update_screen() {
         ((screen[i]) & 1 ? '1' : '0'));
     };
 
+    redraw = false; 
 }
 
 void reset(void) {
@@ -295,12 +311,14 @@ void reset(void) {
     SP = 0;
     stack[0];
     screen[0] = 0; // 128*64 bits
-    redraw = 0; 
+    redraw = false; 
     Tdelay = Tsound = delay = sound = 0;
 
     // CHIP8 looks for programs at 0x200
     PC = 0x200;
 
+    // Start the screen
+    update_screen();
 }
 
 void main(void) {
@@ -322,7 +340,7 @@ void main(void) {
     // Call reset to init the registers etc
     reset();
 
-    // While the machine is powered up
+    // While the machine is powered up  
     while(powered_on && PC < sizeof(ram)) {
 
         // One CPU cycle:
