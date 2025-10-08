@@ -35,6 +35,18 @@ bool redraw = false; // Should update the screen
 unsigned int Tdelay, Tsound;
 
 
+void clear_screen() {
+    
+    unsigned char i=0;
+    // Here we will update the screen
+    // for now use characters
+    for(i=0; i<sizeof(screen)/8; i++)
+    {
+        screen[i]=0;
+    };
+
+    redraw = false; 
+}
 
 /*
 Chip-8 expects Character 'Sprites' 0-F
@@ -228,6 +240,11 @@ void parser(int instruction) {
     // Decides what to do with the next instruction
     switch (opcode) {
 
+    // Jump    
+    case 0x1000: 
+        // Add to stack and jump
+        break;
+
     // ..............................................
 
     // Only two opcodes affect the screen
@@ -238,7 +255,7 @@ void parser(int instruction) {
         clear_screen();
         break;
     
-    // 0xDXYN Draw a sprite
+    // Draw a sprite
     case 0xD000:
         redraw = true; 
         break;
@@ -253,14 +270,21 @@ void parser(int instruction) {
     case 0xA000:
         I = data;
         break;
-        
+
+    // Set register VX
+    case 0x6000:
+        break;
+    
+
+    // Add to register VX
+    case 0x7000:
+        break;
+
     default:
-        printf ("opcode: %X\n", opcode);
+        // Debug
+        printf ("Instruction: %X %X\n", opcode, data);
+
     }
-
-    // Debug
-    printf ("Instruction: %X %X\n", opcode, data);
-
 
     // This won't always be true
     // but for now we can just inc PC
@@ -268,18 +292,6 @@ void parser(int instruction) {
 
 }
 
-void clear_screen() {
-    
-    unsigned char i=0;
-    // Here we will update the screen
-    // for now use characters
-    for(i=0; i<sizeof(screen)/8; i++)
-    {
-        screen[i]=0;
-    };
-
-    redraw = false; 
-}
 
 void update_screen() {
     
