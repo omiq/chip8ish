@@ -30,7 +30,7 @@ unsigned int stack[16];
 unsigned char display[128][64];
 
 // Chip-8 timers: delay and sound
-unsigned int delay, sound;
+unsigned int Tdelay, Tsound;
 
 
 
