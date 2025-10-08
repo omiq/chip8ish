@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 // RAM is 4kb, with first 512 bytes reserved
 // for the original interpreter 
 unsigned char ram[4096];
@@ -223,5 +225,23 @@ void interpret(int instruction) {
     }
 
 
+
+}
+
+void main(void) {
+
+    // the machine is powered up
+    bool powered_on = true;
+
+    // Set up the default character sprites
+    create_sprites();
+    
+    // Program counter reset to zero
+    PC=0;
+
+    // While the machine is powered up
+    while(powered_on) {
+
+    }
 
 }
