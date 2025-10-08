@@ -28,7 +28,7 @@ unsigned int stack[16];
 
 // Original: 64x32-pixel monochrome display
 // Super Chip-48: 128x64
-unsigned char screen[128][64];
+unsigned char screen[(128*64)/8];
 bool redraw = 0; // Should update the screen
 
 // Chip-8 timers: delay and sound
@@ -268,17 +268,38 @@ void parser(int instruction) {
 
 void update_screen() {
     
-    unsigned char x,y=0;
+    unsigned char x,y,i=0;
     // Here we will update the screen
     // for now use characters
-    for(y=0; y<64; y++)
+    for(i=0; i<sizeof(screen); i++)
     {
-        for(x=0; x<64; x++)
-        {
-            putchar(screen[x][y]);
-        }
-    }
+        printf("%c%c%c%c%c%c%c%c",
+        ((screen[i]) & 128 ? '1' : '0'), 
+        ((screen[i]) & 64 ? '1' : '0'), 
+        ((screen[i]) & 32 ? '1' : '0'), 
+        ((screen[i]) & 16 ? '1' : '0'), 
+        ((screen[i]) & 8 ? '1' : '0'), 
+        ((screen[i]) & 4 ? '1' : '0'), 
+        ((screen[i]) & 2 ? '1' : '0'), 
+        ((screen[i]) & 1 ? '1' : '0'));
+    };
 
+}
+
+void reset(void) {
+
+    // Initialise variables
+    ram[0] = 0; // 4kb
+    V[0] = 0; // 16 bytes
+    I = 0;
+    SP = 0;
+    stack[0];
+    screen[0] = 0; // 128*64 bits
+    redraw = 0; 
+    Tdelay = Tsound = delay = sound = 0;
+
+    // CHIP8 looks for programs at 0x200
+    PC = 0x200;
 
 }
 
@@ -298,15 +319,16 @@ void main(void) {
     // Program counter reset to zero
     PC=0;
 
-    parser(0b1010001011110000);
-    powered_on = false;
+    // Call reset to init the registers etc
+    reset();
 
     // While the machine is powered up
-    while(powered_on) {
+    while(powered_on && PC < sizeof(ram)) {
 
         // One CPU cycle:
         // . Fetch the first byte of the opcode
         current_byte = ram[PC];
+
         //   one opcode is 2 bytes so we also need the next byte
         next_byte = ram[PC+1];
 
