@@ -346,7 +346,7 @@ void interpreter(int instruction) {
 
     }
 
-    if(handled) printf ("Success! Instruction: %X %X\n", opcode, data);
+    if(handled) printf ("Success! Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", opcode, reg, rbits, data);
 
     // This won't always be true
     // but for now we can just inc PC
