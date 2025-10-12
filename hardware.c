@@ -238,8 +238,10 @@ void interpreter(int instruction) {
     unsigned int opcode;
     unsigned int data;
     unsigned char rbits;
+    unsigned char reg;
     opcode = instruction & 0xF000;
-    rbits = opcode & 0xF000; 
+    rbits = opcode & 0xF000;
+    reg = (opcode & 0x0F00) >> 8; 
     data = instruction & 0x0FFF;
 
     // For debugging we need to know if we caught the opcode
@@ -297,7 +299,8 @@ void interpreter(int instruction) {
 
     // Jump    
     case 0x1000: 
-        // Add to stack and jump
+        // DON'T add to stack just jump
+        PC = data;
         break;
 
     // JSR
@@ -309,6 +312,7 @@ void interpreter(int instruction) {
 
     // Set register VX
     case 0x6000:
+        V[reg]=data;
         break;
     
     // Add to register VX
@@ -337,7 +341,7 @@ void interpreter(int instruction) {
 
     default:
         // Debug
-        printf ("Unhandled Instruction: %X %X %X\n", opcode, rbits, data);
+        printf ("Unhandled Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", opcode, reg, rbits, data);
         handled=false;
 
     }
