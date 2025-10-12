@@ -48,6 +48,63 @@ void clear_screen() {
     redraw = false; 
 }
 
+/* =======[keys]==========*/
+/* chip8 uses a calculator-like numeric keypad like the kim */
+unsigned char keys[16];	
+
+void keyboardDown(unsigned char key, int x, int y)
+{
+	if(key == 27)    // escape
+		exit(0);
+
+	if(key == '1')		keys[0x1] = 1;
+	else if(key == '2')	keys[0x2] = 1;
+	else if(key == '3')	keys[0x3] = 1;
+	else if(key == '4')	keys[0xC] = 1;
+
+	else if(key == 'q')	keys[0x4] = 1;
+	else if(key == 'w')	keys[0x5] = 1;
+	else if(key == 'e')	keys[0x6] = 1;
+	else if(key == 'r')	keys[0xD] = 1;
+
+	else if(key == 'a')	keys[0x7] = 1;
+	else if(key == 's')	keys[0x8] = 1;
+	else if(key == 'd')	keys[0x9] = 1;
+	else if(key == 'f')	keys[0xE] = 1;
+
+	else if(key == 'z')	keys[0xA] = 1;
+	else if(key == 'x')	keys[0x0] = 1;
+	else if(key == 'c')	keys[0xB] = 1;
+	else if(key == 'v')	keys[0xF] = 1;
+
+	
+}
+
+void keyboardUp(unsigned char key, int x, int y)
+{
+	if(key == '1')		keys[0x1] = 0;
+	else if(key == '2')	keys[0x2] = 0;
+	else if(key == '3')	keys[0x3] = 0;
+	else if(key == '4')	keys[0xC] = 0;
+
+	else if(key == 'q')	keys[0x4] = 0;
+	else if(key == 'w')	keys[0x5] = 0;
+	else if(key == 'e')	keys[0x6] = 0;
+	else if(key == 'r')	keys[0xD] = 0;
+
+	else if(key == 'a')	keys[0x7] = 0;
+	else if(key == 's')	keys[0x8] = 0;
+	else if(key == 'd')	keys[0x9] = 0;
+	else if(key == 'f')	keys[0xE] = 0;
+
+	else if(key == 'z')	keys[0xA] = 0;
+	else if(key == 'x')	keys[0x0] = 0;
+	else if(key == 'c')	keys[0xB] = 0;
+	else if(key == 'v')	keys[0xF] = 0;
+}
+
+
+
 /*
 Chip-8 expects Character 'Sprites' 0-F
 8x5 pixels to be stored in 0x000 to 0x1FF
@@ -171,89 +228,100 @@ unsigned char P = 0;
 
 }
 
-/*
 
-Fetch-Decode-Execute
-
-*/
-
-// The 'decode' part
-void parser(int instruction) {
+// The 'decode' and 'excute' parts
+void interpreter(int instruction) {
 
     //   The full instruction is supplied as 16 bits
     //   We need to split the opcode and data
     unsigned int opcode;
     unsigned int data;
+    unsigned char rbits;
     opcode = instruction & 0xF000;
+    rbits = opcode & 0xF000; 
     data = instruction & 0x0FFF;
+
+    // For debugging we need to know if we caught the opcode
+    bool handled = true;
+
 
     /*
         Standard Chip-8 Instructions
-            00E0 - CLS
-            00EE - RET
-            0nnn - SYS addr
-            1nnn - JP addr
-            2nnn - CALL addr
-            3xkk - SE Vx, byte
-            4xkk - SNE Vx, byte
-            5xy0 - SE Vx, Vy
-            6xkk - LD Vx, byte
-            7xkk - ADD Vx, byte
-            8xy0 - LD Vx, Vy
-            8xy1 - OR Vx, Vy
-            8xy2 - AND Vx, Vy
-            8xy3 - XOR Vx, Vy
-            8xy4 - ADD Vx, Vy
-            8xy5 - SUB Vx, Vy
-            8xy6 - SHR Vx {, Vy}
-            8xy7 - SUBN Vx, Vy
-            8xyE - SHL Vx {, Vy}
-            9xy0 - SNE Vx, Vy
-            Annn - LD I, addr
-            Bnnn - JP V0, addr
-            Cxkk - RND Vx, byte
-            Dxyn - DRW Vx, Vy, nibble
-            Ex9E - SKP Vx
-            ExA1 - SKNP Vx
-            Fx07 - LD Vx, DT
-            Fx0A - LD Vx, K
-            Fx15 - LD DT, Vx
-            Fx18 - LD ST, Vx
-            Fx1E - ADD I, Vx
-            Fx29 - LD F, Vx
-            Fx33 - LD B, Vx
-            Fx55 - LD [I], Vx
-            Fx65 - LD Vx, [I]
-       Super Chip-48 Instructions
-            00Cn - SCD nibble
-            00FB - SCR
-            00FC - SCL
-            00FD - EXIT
-            00FE - LOW
-            00FF - HIGH
-            Dxy0 - DRW Vx, Vy, 0
-            Fx30 - LD HF, Vx
-            Fx75 - LD R, Vx
-            Fx85 - LD Vx, R
+						
+        00E0 - CLS		        8xy0 - LD Vx, Vy		Fx07 - LD Vx, DT		## Super Chip-48 Instructions ##
+        00EE - RET		        8xy1 - OR Vx, Vy		Fx0A - LD Vx, K		    00Cn - SCD nibble
+        0nnn - SYS addr		    8xy2 - AND Vx, Vy		Fx15 - LD DT, Vx		00FB - SCR
+                                8xy3 - XOR Vx, Vy		Fx18 - LD ST, Vx		00FC - SCL
+        1nnn - JP addr		    8xy4 - ADD Vx, Vy		Fx1E - ADD I, Vx		00FD - EXIT
+                                8xy5 - SUB Vx, Vy		Fx29 - LD F, Vx		    00FE - LOW
+        2nnn - CALL addr		8xy6 - SHR Vx {, Vy}	Fx33 - LD B, Vx		    00FF - HIGH
+                                8xy7 - SUBN Vx, Vy		Fx55 - LD [I], Vx		Dxy0 - DRW Vx, Vy, 0
+        3xkk - SE Vx, byte		8xyE - SHL Vx {, Vy}	Fx65 - LD Vx, [I]		Fx30 - LD HF, Vx
+                                                        Fx75 - LD R, Vx
+        4xkk - SNE Vx, byte		9xy0 - SNE Vx, Vy		Fx85 - LD Vx, R
+        5xy0 - SE Vx, Vy		Annn - LD I, addr				
+        6xkk - LD Vx, byte						
+        7xkk - ADD Vx, byte		Bnnn - JP V0, addr				
+						
+		Cxkk - RND Vx, byte				
+		Dxyn - DRW Vx, Vy, nibble				
+		Ex9E - SKP Vx				
+		ExA1 - SKNP Vx				
     */
+
+    // Only two opcodes affect the screen
+    // and need to set the draw flag
 
     // Decides what to do with the next instruction
     switch (opcode) {
+
+    case 0x0000:
+    
+        switch(rbits) {
+        // NoP
+
+        // 0x00E0
+        // Clear the screen    
+        case 0x0000: 
+            clear_screen();
+            break;
+
+        // 0x00EE
+        // Return from subroutine    
+        case 0x000E: 
+            break;
+        }
+
+
 
     // Jump    
     case 0x1000: 
         // Add to stack and jump
         break;
 
-    // ..............................................
-
-    // Only two opcodes affect the screen
-    // and need to set the draw flag
-
-    // Clear the screen    
-    case 0x00E0: 
-        clear_screen();
+    // JSR
+    case 0x2000:
+        stack[SP] = PC;
+        SP++;
+        PC = data;
         break;
+
+    // Set register VX
+    case 0x6000:
+        break;
+    
+    // Add to register VX
+    case 0x7000:
+        break;
+
+    
+    // Set I to supplied address
+    case 0xA000:
+        I = data;
+        break;
+
+
+
     
     // Draw a sprite
     case 0xD000:
@@ -262,29 +330,18 @@ void parser(int instruction) {
     
     // ..............................................
     
-    // Return from subroutine    
-    case 0x00EE: 
-        break;
-    
-    // Set I to supplied address
-    case 0xA000:
-        I = data;
-        break;
 
-    // Set register VX
-    case 0x6000:
-        break;
-    
 
-    // Add to register VX
-    case 0x7000:
-        break;
+
 
     default:
         // Debug
-        printf ("Instruction: %X %X\n", opcode, data);
+        printf ("Unhandled Instruction: %X %X\n", opcode, data);
+        handled=false;
 
     }
+
+    if(handled) printf ("\n\nSuccess! Instruction: %X %X\n", opcode, data);
 
     // This won't always be true
     // but for now we can just inc PC
@@ -333,52 +390,63 @@ void reset(void) {
     update_screen();
 }
 
-void main(void) {
+// One CPU cycle:
+void single_step(void) {
 
     // Temp variables
     unsigned char current_byte = 0;
     unsigned char next_byte = 0;
     unsigned int combined_instruction = 0;
 
-    // the machine is powered up
-    bool powered_on = true;
-
-    // Set up the default character sprites
-    create_sprites();
-    
-    // Program counter reset to zero
-    PC=0;
-
-    // Call reset to init the registers etc
-    reset();
-
-    // While the machine is powered up  
-    while(powered_on && PC < sizeof(ram)) {
-
-        // One CPU cycle:
-        // . Fetch the first byte of the opcode
-        current_byte = ram[PC];
-
         //   one opcode is 2 bytes so we also need the next byte
+        current_byte = ram[PC];
         next_byte = ram[PC+1];
 
         // Now we need to combine the two bytes into a 16-bit big endian
         combined_instruction = (current_byte << 8 | next_byte);
 
-        // . Decode using parser
-        parser(combined_instruction);
-
-        // . Execute instruction
+        // 2. Decode using parser
+        // 3. Execute instruction
         // . Update timers
+        interpreter(combined_instruction);
+}
 
+void main(void) {
+
+    // Single or Automatic operation
+    bool auto_mode = false;
+
+    // the machine is powered up
+    bool powered_on = true;
+
+    // Program counter reset to zero
+    PC=0;
+
+    // Set up the default character sprites
+    create_sprites();
+    
+    // Call reset to init the registers etc
+    reset();
+
+    // While the machine is powered up  
+    while(powered_on && PC < sizeof(ram) && auto_mode == 1) {
+
+        single_step();
 
         // If the draw flag is set, update the screen
         if(redraw) update_screen();
  
         // Check keys
 
-
     }
+
+    if(!auto_mode) {
+        printf("\n\rSINGLE STEP TEST\n\r");
+        ram[PC]=0xA2;
+        ram[PC+1]=0xF0;
+        single_step();
+    }
+
 
     return;
 }
