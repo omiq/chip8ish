@@ -337,7 +337,7 @@ void interpreter(int instruction) {
 
     default:
         // Debug
-        printf ("Unhandled Instruction: %X %X\n", opcode, data);
+        printf ("Unhandled Instruction: %X %X %X\n", opcode, rbits, data);
         handled=false;
 
     }
