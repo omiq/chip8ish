@@ -454,7 +454,9 @@ bool load(const char* filename)
 	if((4096-512) > lSize)
 	{
 		for(int i = 0; i < lSize; ++i)
-			ram[i + 512] = buffer[i];
+
+            // programs go into 0x200
+			ram[0x200+i] = buffer[i];
 	}
 	else
 		printf("Uh-oh! Out of memory loading program %d!\n",lSize);
@@ -485,8 +487,6 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < argc; i++) {
             printf("%s\n", argv[i]);
         }
-
-        bool success = load(argv[1]);
     }
     else
     {
@@ -503,6 +503,9 @@ int main(int argc, char *argv[]) {
     
     // Call reset to init the registers etc
     reset();
+
+    // Load the requested program into RAM
+    bool success = load(argv[1]);
 
     // While the machine is powered up  
     while(powered_on && PC < sizeof(ram) && auto_mode == 1) {
