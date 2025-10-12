@@ -29,7 +29,9 @@ unsigned int stack[16];
 
 // Original: 64x32-pixel monochrome display
 // Super Chip-48: 128x64
-unsigned char screen[(128*64)/8];
+unsigned char screen_width = 64;
+unsigned char screen_height = 32;
+bool screen[(64*32)];
 bool redraw = false; // Should update the screen
 
 // Chip-8 timers: delay and sound
@@ -48,7 +50,7 @@ void clear_regs() {
 
 void clear_ram() {
     
-    unsigned char i=0;
+    unsigned int i=0;
     // Here we will update the screen
     // for now use characters
     for(i=0; i<sizeof(ram); i++)
@@ -59,7 +61,7 @@ void clear_ram() {
 
 void clear_stack() {
     
-    unsigned char i=0;
+    unsigned int i=0;
     // Here we will update the screen
     // for now use characters
     for(i=0; i<sizeof(stack); i++)
@@ -70,10 +72,10 @@ void clear_stack() {
 
 void clear_screen() {
     
-    unsigned char i=0;
+    unsigned int i=0;
     // Here we will update the screen
     // for now use characters
-    for(i=0; i<sizeof(screen)/8; i++)
+    for(i=0; i<sizeof(screen); i++)
     {
         screen[i]=0;
     };
@@ -265,19 +267,6 @@ unsigned char P = 0;
 // The 'decode' and 'excute' parts
 void interpreter(int instruction) {
 
-    //   The full instruction is supplied as 16 bits
-    //   We need to split the opcode and data
-    unsigned int opcode;
-    unsigned int data;
-    unsigned char rbits;
-    unsigned char reg;
-    opcode = instruction & 0xF000;
-    rbits = opcode & 0xF000;
-    reg = (opcode & 0x0F00) >> 8; 
-    data = instruction & 0x0FFF;
-
-    // For debugging we need to know if we caught the opcode
-    bool handled = true;
 
 
     /*
@@ -303,6 +292,22 @@ void interpreter(int instruction) {
 		Ex9E - SKP Vx				
 		ExA1 - SKNP Vx				
     */
+
+    //   The full instruction is supplied as 16 bits
+    //   We need to split the opcode and data
+    unsigned int opcode;
+    unsigned int data;
+    unsigned char rbits;
+    unsigned char reg, reg2;
+    unsigned char x,y,height,pixel,row,col;
+    opcode = instruction & 0xF000;
+    rbits = opcode & 0xF000;
+    reg = (opcode & 0x0F00) >> 8; 
+    reg2 = (opcode & 0x00F0) >> 4;
+    data = opcode & 0x0FFF;
+
+    // For debugging we need to know if we caught the opcode
+    bool handled = true;
 
     // NB: Only two opcodes affect the screen
     //     and need to set the draw flag
@@ -333,6 +338,7 @@ void interpreter(int instruction) {
     case 0x1000: 
         // DON'T add to stack just jump
         PC = data;
+        printf("JP: %X\n", PC);
         break;
 
     // JSR
@@ -340,21 +346,26 @@ void interpreter(int instruction) {
         stack[SP] = PC;
         SP++;
         PC = data;
+        printf("JSR: %X\n", PC);
         break;
 
     // Set register VX
     case 0x6000:
         V[reg]=data;
+        printf("LD V%X, %X\n", reg, data);
         break;
     
     // Add to register VX
     case 0x7000:
+        V[reg] += data;
+        printf("ADD V%X, %X\n", reg, data);
         break;
 
     
     // Set I to supplied address
     case 0xA000:
         I = data;
+        printf("LD I, %X\n", data);
         break;
 
 
@@ -362,6 +373,35 @@ void interpreter(int instruction) {
     
     // Draw a sprite
     case 0xD000:
+
+        x = V[reg];
+        y = V[reg2];
+        height = opcode & 0x000F;
+        pixel = 0;
+        row = 0;
+        col = 0;
+
+        // While we have rows to draw
+        while(row < height) {
+            // Get the pixel data for the current row
+            pixel = ram[I + row];
+
+            // While we have columns to draw
+            // Each row is 8 pixels wide
+            col = 0;
+            while(col < 8) {
+                // If the pixel is set, XOR the screen
+                if(pixel & (0x80 >> col)) {
+                    // If the pixel is already set, set the carry flag
+                    if(screen[(x + col + ((y + row) * 64))] == 1) V[0xF] = 1;
+                    // XOR the pixel (causes flickering)                                   
+                    screen[((y + row) * screen_width) + (x + col)] ^= 1;
+                }
+                col++;
+            }
+            row++;
+        }
+
         redraw = true; 
         break;
     
@@ -373,12 +413,12 @@ void interpreter(int instruction) {
 
     default:
         // Debug
-        printf ("Unhandled Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", opcode, reg, rbits, data);
+        printf ("PC:%X Unhandled Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", PC, opcode, reg, rbits, data);
         handled=false;
 
     }
 
-    if(handled) printf ("Success! Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", opcode, reg, rbits, data);
+    if(handled) printf ("PC:%X Success! Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", PC, opcode, reg, rbits, data);
 
     // This won't always be true
     // but for now we can just inc PC
@@ -389,23 +429,36 @@ void interpreter(int instruction) {
 
 void update_screen() {
     
-    unsigned char x,y,i=0;
+    unsigned char x=0,y,i=0;
+
+
+    //printf("\33[2J\n");
     // Here we will update the screen
     // for now use characters
-    for(i=0; i<sizeof(screen)/8; i++)
+    y = 0;
+    
+    for(y = 0; y < screen_height; y++)
     {
-        printf("%c%c%c%c%c%c%c%c",
-        ((screen[i]) & 128 ? '1' : '0'), 
-        ((screen[i]) & 64 ? '1' : '0'), 
-        ((screen[i]) & 32 ? '1' : '0'), 
-        ((screen[i]) & 16 ? '1' : '0'), 
-        ((screen[i]) & 8 ? '1' : '0'), 
-        ((screen[i]) & 4 ? '1' : '0'), 
-        ((screen[i]) & 2 ? '1' : '0'), 
-        ((screen[i]) & 1 ? '1' : '0'));
+        printf("\n%d ", y);
+        for(x = 0; x < screen_width; x++)
+        {
+            if(screen[(y * screen_width) + x]) printf("1"); else printf("0");
+        }
+        
+
     };
 
     redraw = false; 
+
+    printf("\n");
+}
+
+
+void printbin(unsigned char value) {
+    for(int i = 7; i >= 0; i--) {
+        printf("%d", (value >> i) & 1);
+    }
+    printf("\n");
 }
 
 void reset(void) {
@@ -457,18 +510,20 @@ void single_step(void) {
 
 bool load(const char* filename)
 {
+
+    unsigned int i;
+
 	// Open file
 	FILE * pFile = fopen(filename, "rb");
 	if (pFile == NULL)
 	{
 		printf("Error loading %s \n", filename);
 		return false;
-	}
-    else
-    {
+	} else {
         // Attempt to load a file into chip8 ram
         printf("Load file %s\n", filename);
-    }	
+    	
+    }
 
 
 	// Check file size
@@ -496,15 +551,19 @@ bool load(const char* filename)
 	// Copy buffer to Chip8 memory
 	if((4096-512) > lSize)
 	{
-		for(int i = 0; i < lSize; ++i)
-
+		for(i = 0; i < lSize; ++i)
+        {
             // programs go into 0x200
 			ram[0x200+i] = buffer[i];
+            printbin(buffer[i]);
+        }
 	}
 	else
-		printf("Uh-oh! Out of memory loading program %d!\n",lSize);
-	
-	// Clean up
+    {
+		printf("Uh-oh! Out of memory loading program %ld!\n",lSize); 
+        exit(1);
+    }    
+    // Clean up
 	fclose(pFile);
 	free(buffer);
 
@@ -568,6 +627,7 @@ int main(int argc, char *argv[]) {
             // ram[PC]=0xA2;
             // ram[PC+1]=0xF0;
             single_step();
+            if(redraw) update_screen();
             c=getchar();
         }
     }
