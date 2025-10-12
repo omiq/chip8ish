@@ -412,7 +412,7 @@ void single_step(void) {
         interpreter(combined_instruction);
 }
 
-void main(void) {
+int main(int argc, char *argv[]) {
 
     // Single or Automatic operation
     bool auto_mode = false;
@@ -449,5 +449,5 @@ void main(void) {
     }
 
 
-    return;
+    return 0;
 }
