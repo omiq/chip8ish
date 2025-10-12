@@ -342,7 +342,7 @@ void interpreter(int instruction) {
 
     }
 
-    if(handled) printf ("\n\nSuccess! Instruction: %X %X\n", opcode, data);
+    if(handled) printf ("Success! Instruction: %X %X\n", opcode, data);
 
     // This won't always be true
     // but for now we can just inc PC
@@ -470,7 +470,7 @@ bool load(const char* filename)
 int main(int argc, char *argv[]) {
 
     // Single or Automatic operation
-    bool auto_mode = false;
+    bool auto_mode = true;
 
     // the machine is powered up
     bool powered_on = true;
@@ -485,6 +485,8 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < argc; i++) {
             printf("%s\n", argv[i]);
         }
+
+        bool success = load(argv[1]);
     }
     else
     {
