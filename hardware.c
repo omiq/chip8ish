@@ -35,6 +35,38 @@ bool redraw = false; // Should update the screen
 // Chip-8 timers: delay and sound
 unsigned int Tdelay, Tsound;
 
+void clear_regs() {
+    
+    unsigned char i=0;
+    // Here we will update the screen
+    // for now use characters
+    for(i=0; i<sizeof(V); i++)
+    {
+        V[i]=0;
+    };
+}
+
+void clear_ram() {
+    
+    unsigned char i=0;
+    // Here we will update the screen
+    // for now use characters
+    for(i=0; i<sizeof(ram); i++)
+    {
+        ram[i]=0;
+    };
+}
+
+void clear_stack() {
+    
+    unsigned char i=0;
+    // Here we will update the screen
+    // for now use characters
+    for(i=0; i<sizeof(stack); i++)
+    {
+        stack[i]=0;
+    };
+}
 
 void clear_screen() {
     
@@ -378,15 +410,22 @@ void update_screen() {
 
 void reset(void) {
 
+    printf("Starting ...\n");
+
     // Initialise variables
-    ram[0] = 0; // 4kb
-    V[0] = 0; // 16 bytes
+    clear_ram(); // 4kb to 0
+    clear_regs(); // 16 bytes to 0
+    clear_stack(); // clear the stack
+    clear_screen(); // wipe the screen memory
+
+
+
     I = 0;
     SP = 0;
-    stack[0];
-    screen[0] = 0; // 128*64 bits
-    redraw = false; 
     Tdelay = Tsound = delay = sound = 0;
+
+    // Set up the default character sprites
+    create_sprites();
 
     // CHIP8 looks for programs at 0x200
     PC = 0x200;
@@ -489,7 +528,7 @@ int main(int argc, char *argv[]) {
 
     // Help and argument parsing
     if(argc>1) {
-        printf("\n\nCHIP8ish called with %d arguments:\n", argc);
+        // printf("\n\nCHIP8ish called with %d arguments:\n", argc);
         // for (int i = 0; i < argc; i++) {
         //     printf("%s\n", argv[i]);
         // }
@@ -504,9 +543,6 @@ int main(int argc, char *argv[]) {
         exit(0);
 
     }
-
-    // Set up the default character sprites
-    create_sprites();
     
     // Call reset to init the registers etc
     reset();
