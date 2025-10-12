@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib>
 
 // RAM is 4kb, with first 512 bytes reserved
 // for the original interpreter 
