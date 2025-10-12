@@ -50,7 +50,7 @@ void clear_screen() {
 }
 
 /* =======[keys]==========*/
-/* chip8 uses a calculator-like numeric keypad like the kim */
+/* chip8 uses a calculator-like hex numeric keypad like the kim1 */
 unsigned char keys[16];	
 
 void keyboardDown(unsigned char key, int x, int y)
@@ -107,9 +107,9 @@ void keyboardUp(unsigned char key, int x, int y)
 
 
 /*
-Chip-8 expects Character 'Sprites' 0-F
-8x5 pixels to be stored in 0x000 to 0x1FF
-(the interpreter area)
+    Chip-8 expects Character 'Sprites' 0-F
+    8x5 pixels to be stored in 0x000 to 0x1FF
+    (the interpreter area)
 */
 void create_sprites(void) {
 
@@ -270,8 +270,8 @@ void interpreter(int instruction) {
 		ExA1 - SKNP Vx				
     */
 
-    // Only two opcodes affect the screen
-    // and need to set the draw flag
+    // NB: Only two opcodes affect the screen
+    //     and need to set the draw flag
 
     // Decides what to do with the next instruction
     switch (opcode) {
@@ -412,6 +412,61 @@ void single_step(void) {
         interpreter(combined_instruction);
 }
 
+bool load(const char* filename)
+{
+	// Open file
+	FILE * pFile = fopen(filename, "rb");
+	if (pFile == NULL)
+	{
+		printf("Error loading %s \n", filename);
+		return false;
+	}
+    else
+    {
+        // Attempt to load a file into chip8 ram
+        printf("Load file %s\n", filename);
+    }	
+
+
+	// Check file size
+	fseek(pFile , 0 , SEEK_END);
+	long lSize = ftell(pFile);
+	rewind(pFile);
+	printf("File Size is: %d\n", (int)lSize);
+	
+	// Allocate memory to contain the whole file
+	char * buffer = (char*)malloc(sizeof(char) * lSize);
+	if (buffer == NULL) 
+	{
+		printf("Error allocating memory!\n"); 
+		return false;
+	}
+
+	// Copy the file into the buffer
+	size_t result = fread (buffer, 1, lSize, pFile);
+	if (result != lSize) 
+	{
+		printf("Error reading file!\n"); 
+		return false;
+	}
+
+	// Copy buffer to Chip8 memory
+	if((4096-512) > lSize)
+	{
+		for(int i = 0; i < lSize; ++i)
+			ram[i + 512] = buffer[i];
+	}
+	else
+		printf("Uh-oh! Out of memory loading program %d!\n",lSize);
+	
+	// Clean up
+	fclose(pFile);
+	free(buffer);
+
+    // It worked!
+	return true;
+}
+
 int main(int argc, char *argv[]) {
 
     // Single or Automatic operation
@@ -422,6 +477,24 @@ int main(int argc, char *argv[]) {
 
     // Program counter reset to zero
     PC=0;
+
+
+    // Help and argument parsing
+    if(argc>1) {
+        printf("\n\nCHIP8ish called with %d arguments:\n", argc);
+        for (int i = 0; i < argc; i++) {
+            printf("%s\n", argv[i]);
+        }
+    }
+    else
+    {
+        printf("\n\nCHIP8ish\n");
+        printf("Chris Garrett RetroGameCoders.com\n");
+        printf("2025\n\n");
+        printf("USAGE: chip8ish [filename]\n\n");
+        exit(0);
+
+    }
 
     // Set up the default character sprites
     create_sprites();
@@ -442,12 +515,13 @@ int main(int argc, char *argv[]) {
     }
 
     if(!auto_mode) {
+
         printf("\n\rSINGLE STEP TEST\n\r");
         ram[PC]=0xA2;
         ram[PC+1]=0xF0;
         single_step();
     }
 
-
+    printf("\n\n");
     return 0;
 }
