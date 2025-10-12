@@ -488,9 +488,10 @@ int main(int argc, char *argv[]) {
     // Help and argument parsing
     if(argc>1) {
         printf("\n\nCHIP8ish called with %d arguments:\n", argc);
-        for (int i = 0; i < argc; i++) {
-            printf("%s\n", argv[i]);
-        }
+        // for (int i = 0; i < argc; i++) {
+        //     printf("%s\n", argv[i]);
+        // }
+        if(argc == 3) auto_mode = false;
     }
     else
     {
@@ -529,6 +530,7 @@ int main(int argc, char *argv[]) {
         ram[PC]=0xA2;
         ram[PC+1]=0xF0;
         single_step();
+        getchar();
     }
 
     printf("\n\n");
