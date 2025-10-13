@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+bool debug = false;
+
 // RAM is 4kb, with first 512 bytes reserved
 // for the original interpreter 
 unsigned char ram[4096];
@@ -320,7 +322,7 @@ void interpreter(int instruction) {
     case 0x1000: 
         // DON'T add to stack just jump
         PC = data;
-        printf("JP: %X\n", PC);
+        if(debug) printf("JP: %X\n", PC);
         break;
 
     // JSR
@@ -328,26 +330,26 @@ void interpreter(int instruction) {
         stack[SP] = PC;
         SP++;
         PC = data;
-        printf("JSR: %X\n", PC);
+        if(debug) printf("JSR: %X\n", PC);
         break;
 
     // Set register VX
     case 0x6000:
         V[reg]=rbits;
-        printf("LD V%X, %X\n", reg, rbits);
+        if(debug) printf("LD V%X, %X\n", reg, rbits);
         break;
     
     // Add to register VX
     case 0x7000:
         V[reg] += data;
-        printf("ADD V%X, %X\n", reg, data);
+        if(debug) printf("ADD V%X, %X\n", reg, data);
         break;
 
     
     // Set I to supplied address
     case 0xA000:
         I = data;
-        printf("LD I, %X\n", data);
+        if(debug) printf("LD I, %X\n", data);
         break;
 
 
@@ -359,7 +361,7 @@ void interpreter(int instruction) {
         x = V[reg];
         y = V[reg2];
         height = instruction & 0x000F;
-        printf("DRAW X=V%X, Y=V%X, H=%X\n", reg, reg2, height);
+        if(debug) printf("DRAW X=V%X, Y=V%X, H=%X\n", reg, reg2, height);
         pixel = 0;
         row = 0;
         col = 0;
@@ -396,12 +398,12 @@ void interpreter(int instruction) {
 
     default:
         // Debug
-        printf ("PC:%X Unhandled Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", PC, opcode, reg, rbits, data);
+        if(debug) printf ("PC:%X Unhandled Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", PC, opcode, reg, rbits, data);
         handled=false;
 
     }
 
-    if(handled) printf ("PC:%X Success! Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", PC, opcode, reg, rbits, data);
+    if(handled) if(debug) printf ("PC:%X Success! Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", PC, opcode, reg, rbits, data);
 
     // This won't always be true
     // but for now we can just inc PC
@@ -414,18 +416,19 @@ void update_screen() {
     
     unsigned char x=0,y,i=0;
 
-
-    //printf("\33[2J\n");
+    // Clear the screen
+    printf("\33[2J\n");
+    
     // Here we will update the screen
     // for now use characters
     y = 0;
     
     for(y = 0; y < screen_height; y++)
     {
-        printf("\n%d ", y);
+        printf("\n");
         for(x = 0; x < screen_width; x++)
         {
-            if(screen[(y * screen_width) + x]) printf("1"); else printf("0");
+            if(screen[(y * screen_width) + x]) printf("🟩"); else printf("⬛️");
         }
         
 
@@ -446,7 +449,7 @@ void printbin(unsigned char value) {
 
 void reset(void) {
 
-    printf("Starting ...\n");
+    if(debug) printf("Starting ...\n");
 
     // Initialise variables
     clear_ram(); // 4kb to 0
@@ -504,7 +507,7 @@ bool load(const char* filename)
 		return false;
 	} else {
         // Attempt to load a file into chip8 ram
-        printf("Load file %s\n", filename);
+        if(debug) printf("Load file %s\n", filename);
     	
     }
 
@@ -513,7 +516,7 @@ bool load(const char* filename)
 	fseek(pFile , 0 , SEEK_END);
 	long lSize = ftell(pFile);
 	rewind(pFile);
-	printf("File Size is: %d\n", (int)lSize);
+	if(debug) printf("File Size is: %d\n", (int)lSize);
 	
 	// Allocate memory to contain the whole file
 	char * buffer = (char*)malloc(sizeof(char) * lSize);
@@ -544,10 +547,13 @@ bool load(const char* filename)
             // programs go into 0x200
             thisbyte = buffer[i];
             ram[0x200+i] = thisbyte;
-            printf("0x%X: 0x%X ", 0x200+i, thisbyte);
-            printbin(thisbyte);
-        
+            if(debug) {
+                printf("0x%X: 0x%X ", 0x200+i, thisbyte);
+                printbin(thisbyte);
+            }
         }
+            
+        
 	}
 	else
     {
@@ -613,6 +619,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(!auto_mode) {
+        debug = true;
         while(c!=27) {
             printf("\n\rSINGLE STEP TEST\n\r");
             // ram[PC]=0xA2;
