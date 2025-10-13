@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // RAM is 4kb, with first 512 bytes reserved
 // for the original interpreter 
@@ -24,7 +25,7 @@ unsigned char delay, sound;
 unsigned int PC;
 
 // The stack is an array of 16x16-bit values
-unsigned char SP; // Stack Pointer
+unsigned int SP; // Stack Pointer
 unsigned int stack[16];
 
 // Original: 64x32-pixel monochrome display
@@ -39,46 +40,24 @@ unsigned int Tdelay, Tsound;
 
 void clear_regs() {
     
-    unsigned char i=0;
-    // Here we will update the screen
-    // for now use characters
-    for(i=0; i<sizeof(V); i++)
-    {
-        V[i]=0;
-    };
+    memset(V, 0, sizeof(V));
+
 }
 
 void clear_ram() {
     
-    unsigned int i=0;
-    // Here we will update the screen
-    // for now use characters
-    for(i=0; i<sizeof(ram); i++)
-    {
-        ram[i]=0;
-    };
+    memset(ram, 0, sizeof(ram));
+
 }
 
 void clear_stack() {
     
-    unsigned int i=0;
-    // Here we will update the screen
-    // for now use characters
-    for(i=0; i<sizeof(stack); i++)
-    {
-        stack[i]=0;
-    };
+    memset(stack, 0, sizeof(stack));
 }
 
 void clear_screen() {
     
-    unsigned int i=0;
-    // Here we will update the screen
-    // for now use characters
-    for(i=0; i<sizeof(screen); i++)
-    {
-        screen[i]=0;
-    };
+    memset(screen, 0, sizeof(screen));
 
     redraw = false; 
 }
@@ -148,6 +127,9 @@ void keyboardUp(unsigned char key, int x, int y)
 void create_sprites(void) {
 
 unsigned char P = 0;
+
+// could use  memcpy(dest, source, sizeof(source));
+// but this feels more like a Chip-8 thing
 
 // "0"
     ram[P] = 0b11110000;
@@ -301,10 +283,10 @@ void interpreter(int instruction) {
     unsigned char reg, reg2;
     unsigned char x,y,height,pixel,row,col;
     opcode = instruction & 0xF000;
-    rbits = opcode & 0xF000;
-    reg = (opcode & 0x0F00) >> 8; 
-    reg2 = (opcode & 0x00F0) >> 4;
-    data = opcode & 0x0FFF;
+    rbits = instruction & 0x0FFF;
+    reg = (instruction & 0x0F00) >> 8; 
+    reg2 = (instruction & 0x00F0) >> 4;
+    data = instruction & 0x0FFF;
 
     // For debugging we need to know if we caught the opcode
     bool handled = true;
@@ -351,8 +333,8 @@ void interpreter(int instruction) {
 
     // Set register VX
     case 0x6000:
-        V[reg]=data;
-        printf("LD V%X, %X\n", reg, data);
+        V[reg]=rbits;
+        printf("LD V%X, %X\n", reg, rbits);
         break;
     
     // Add to register VX
@@ -373,10 +355,11 @@ void interpreter(int instruction) {
     
     // Draw a sprite
     case 0xD000:
-
+        
         x = V[reg];
         y = V[reg2];
-        height = opcode & 0x000F;
+        height = instruction & 0x000F;
+        printf("DRAW X=V%X, Y=V%X, H=%X\n", reg, reg2, height);
         pixel = 0;
         row = 0;
         col = 0;
@@ -548,14 +531,22 @@ bool load(const char* filename)
 		return false;
 	}
 
+    // there seems to be a 6 byte header
+    // skip the first 6 bytes
+    
 	// Copy buffer to Chip8 memory
+    unsigned char thisbyte = 0;
 	if((4096-512) > lSize)
 	{
 		for(i = 0; i < lSize; ++i)
         {
+
             // programs go into 0x200
-			ram[0x200+i] = buffer[i];
-            printbin(buffer[i]);
+            thisbyte = buffer[i];
+            ram[0x200+i] = thisbyte;
+            printf("0x%X: 0x%X ", 0x200+i, thisbyte);
+            printbin(thisbyte);
+        
         }
 	}
 	else
