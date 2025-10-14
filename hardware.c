@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 bool debug = false;
+unsigned int break_point = 0;
 
 // RAM is 4kb, with first 512 bytes reserved
 // for the original interpreter 
@@ -249,22 +251,17 @@ unsigned char P = 0;
 }
 
 
+// Delay for a given number of microseconds
 bool tdelay(float delay) {
-    time_t start_time = time(NULL);
-    time_t end_time = 0;
-    while(end_time - start_time < delay) {
-        end_time = time(NULL);
-    }
-    
+    usleep((unsigned int)(delay));  // Convert seconds to microseconds
     return true;
 }
-
 
 // The 'decode' and 'excute' parts
 void interpreter(int instruction) {
 
     bool delay_done = false;
-    delay_done = tdelay(0.025);
+    delay_done = tdelay(100000);
 
     /*
         Standard Chip-8 Instructions
@@ -303,7 +300,7 @@ void interpreter(int instruction) {
     reg = (instruction & 0x0F00) >> 8; 
     reg2 = (instruction & 0x00F0) >> 4;
     data = instruction & 0x0FFF;
-    low_byte = instruction & 0x00FF;
+    low_byte = instruction & 0x00FF; // aka kk in docs
 
     // For debugging we need to know if we caught the opcode
     bool handled = true;
@@ -350,6 +347,29 @@ void interpreter(int instruction) {
         PC = data;
         if(debug) printf("JSR: %X\n", PC);
         break;
+
+    // 0x3000
+    // Skip next instruction if Vx = kk.
+    case 0x3000:
+
+        if(V[reg] == low_byte) PC += 2;
+        if(debug) printf("SE V%X, %X\n", reg, low_byte);
+        break;
+
+    // 0x4000
+    //Skip next instruction if Vx != kk.
+    case 0x4000:
+        if(V[reg] != low_byte) PC += 2;
+        if(debug) printf("SNE V%X, %X\n", reg, low_byte);
+        break;
+
+    // 0x5000
+    // Skip next instruction if Vx = Vy.
+    case 0x5000:
+        if(V[reg] == V[reg2]) PC += 2;
+        if(debug) printf("SNE V%X, V%X\n", reg, reg2);
+        break;
+
 
     // Set register VX
     case 0x6000:
@@ -418,8 +438,33 @@ void interpreter(int instruction) {
         break;
     
     // ..............................................
-    
-        case 0xF000:
+    // 0xE000
+    case 0xE000:
+        switch(low_byte) {
+
+            // Ex9E - SKP Vx
+            // Skip next instruction if key with the value of Vx is pressed.
+            // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
+            case 0x9E:
+                if(keys[V[reg]]) PC += 2;
+                if(debug) printf("SKP V%X\n", reg);
+                break;
+
+            // ExA1 - SKNP Vx
+            // Skip next instruction if key with the value of Vx is not pressed.
+            // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
+            case 0xA1:
+                if(!keys[V[reg]]) PC += 2;
+                if(debug) printf("SKNP V%X\n", reg);
+                break;
+            }
+        
+
+
+
+        break;
+
+    case 0xF000:
                     
             // Fx07 - LD Vx, DT
             // Fx0A - LD Vx, K	
@@ -452,8 +497,9 @@ void interpreter(int instruction) {
 
     default:
         // Debug
-        if(debug) printf ("PC:%X \033[31mUnhandled Instruction\033[0m: 0x%04X Op:%X Reg:%X rNibble:%X Data:%X\n", PC, instruction, opcode, reg, rNibble, data);
+        printf ("PC:%X \033[31mUnhandled Instruction\033[0m: 0x%04X Op:%X Reg:%X rNibble:%X Data:%X\n", PC, instruction, opcode, reg, rNibble, data);
         handled=false;
+        debug = true;
 
     }
 
@@ -646,6 +692,8 @@ int main(int argc, char *argv[]) {
             auto_mode = false;
             debug = true;
         }
+
+        if(argc == 4) break_point = strtol(argv[3], NULL, 16);
     }
     else
     {
@@ -664,7 +712,7 @@ int main(int argc, char *argv[]) {
     bool success = load(argv[1]);
 
     // While the machine is powered up  
-    while(powered_on && PC < sizeof(ram) && auto_mode == 1) {
+    while(powered_on && PC < sizeof(ram) && auto_mode == 1 && PC != break_point) {
 
         single_step();
 
