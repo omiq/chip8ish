@@ -366,7 +366,7 @@ void interpreter(int instruction) {
 
     // Compare VX and VY
     // if VX != VY, skip next instruction
-        case 0x9000:   
+    case 0x9000:   
         if(V[reg] != V[reg2]) {
             PC += 2;
         }
