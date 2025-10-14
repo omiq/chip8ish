@@ -7,7 +7,7 @@ Right now I am using https://johnearnest.github.io/Octo/ to compile and decompil
 
 ## Progress So Far
 
-Got just enough of an interpreter to load and execute a program that displays a little man on screen (using emoji because running in command line terminal)
+Got just enough of an interpreter to load and execute demos from the [test suite](https://github.com/Timendus/chip8-test-suite) and my own first programs, such as this one that displays a little man on screen (using emoji because running in command line terminal)
 
 <img width="1281" height="697" alt="sprite test" src="https://github.com/user-attachments/assets/30593d42-2fb2-4658-9e79-8a98086e29f5" />
 
