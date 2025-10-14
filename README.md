@@ -15,6 +15,7 @@ Got just enough of an interpreter to load and execute demos from the [test suite
 
 <img width="1029" height="617" alt="ibm logo test" src="https://github.com/user-attachments/assets/44e71459-1246-44f3-9f5b-869c36ac08a4" />
 
+<img width="1281" height="792" alt="chip 8 logo" src="https://github.com/user-attachments/assets/72b3301a-7fa0-4632-8cdf-21d946ca7ad1" />
 
 
 ## Source Documents and Notes
