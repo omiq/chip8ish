@@ -297,11 +297,13 @@ void interpreter(int instruction) {
     unsigned char rNibble;
     unsigned char reg, reg2;
     unsigned char x,y,height,pixel,row,col;
+    unsigned char low_byte;
     opcode = instruction & 0xF000;
     rNibble = instruction & 0x000F;
     reg = (instruction & 0x0F00) >> 8; 
     reg2 = (instruction & 0x00F0) >> 4;
     data = instruction & 0x0FFF;
+    low_byte = instruction & 0x00FF;
 
     // For debugging we need to know if we caught the opcode
     bool handled = true;
@@ -331,7 +333,7 @@ void interpreter(int instruction) {
             PC = stack[SP];
             break;
         }
-
+        break;
 
 
     // Jump    
@@ -351,13 +353,13 @@ void interpreter(int instruction) {
 
     // Set register VX
     case 0x6000:
-        V[reg]=data;
+        V[reg]=low_byte;
         if(debug) printf("LD V%X, %X\n", reg, rNibble);
         break;
     
     // Add to register VX
     case 0x7000:
-        V[reg] += data;
+        V[reg] += low_byte;
         if(debug) printf("ADD V%X, %X\n", reg, data);
         break;
 
@@ -432,21 +434,21 @@ void interpreter(int instruction) {
             // Fx85 - LD Vx, R
             
             // 0xFX07
-            switch(rNibble) {
+            switch(low_byte) {
 
-            // 0xFx29: Set I to sprite location in memory as the font character in VX (0x0-0xF) 
-            case 0x29:
-                I = V[reg] * 0x5;
-                printf("Set I to sprite in V%X (0x%02X). Result(VX*5) = (0x%02X)\n", data, V[reg], V[reg] * 0x5);
-                break;
+                // 0xFx29: Set I to sprite location in memory as the font character in VX (0x0-0xF) 
+                case 0x29:
+                    I = V[reg] * 0x5;
+                    printf("Set I to sprite in V%X (0x%02X). Result(VX*5) = (0x%02X)\n", data, V[reg], V[reg] * 0x5);
+                    break;
 
-            case 0x07:
-                V[reg] = Tdelay;
-                if(debug) printf("LD V%X, DT\n", reg);
-                break;
-            }
-            
-
+                case 0x07:
+                    V[reg] = Tdelay;
+                    if(debug) printf("LD V%X, DT\n", reg);
+                    break;
+                }
+                
+            break;
 
     default:
         // Debug
