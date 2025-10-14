@@ -281,11 +281,11 @@ void interpreter(int instruction) {
     //   We need to split the opcode and data
     unsigned int opcode;
     unsigned int data;
-    unsigned char rbits;
+    unsigned char rNibble;
     unsigned char reg, reg2;
     unsigned char x,y,height,pixel,row,col;
     opcode = instruction & 0xF000;
-    rbits = instruction & 0x0FFF;
+    rNibble = instruction & 0x0FFF;
     reg = (instruction & 0x0F00) >> 8; 
     reg2 = (instruction & 0x00F0) >> 4;
     data = instruction & 0x0FFF;
@@ -301,7 +301,7 @@ void interpreter(int instruction) {
 
     case 0x0000:
     
-        switch(rbits) {
+        switch(rNibble) {
         // NoP
 
         // 0x00E0
@@ -335,8 +335,8 @@ void interpreter(int instruction) {
 
     // Set register VX
     case 0x6000:
-        V[reg]=rbits;
-        if(debug) printf("LD V%X, %X\n", reg, rbits);
+        V[reg]=rNibble;
+        if(debug) printf("LD V%X, %X\n", reg, rNibble);
         break;
     
     // Add to register VX
@@ -398,12 +398,12 @@ void interpreter(int instruction) {
 
     default:
         // Debug
-        if(debug) printf ("PC:%X Unhandled Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", PC, opcode, reg, rbits, data);
+        if(debug) printf ("PC:%X Unhandled Instruction: Op:%X Reg:%X rNibble:%X Data:%X\n", PC, opcode, reg, rNibble, data);
         handled=false;
 
     }
 
-    if(handled) if(debug) printf ("PC:%X Success! Instruction: Op:%X Reg:%X Rbits:%X Data:%X\n", PC, opcode, reg, rbits, data);
+    if(handled) if(debug) printf ("PC:%X Success! Instruction: Op:%X Reg:%X rNibble:%X Data:%X\n", PC, opcode, reg, rNibble, data);
 
     // This won't always be true
     // but for now we can just inc PC
