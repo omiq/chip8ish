@@ -17,6 +17,8 @@ Got just enough of an interpreter to load and execute demos from the [test suite
 
 <img width="1281" height="792" alt="chip 8 logo" src="https://github.com/user-attachments/assets/72b3301a-7fa0-4632-8cdf-21d946ca7ad1" />
 
+<img width="1079" height="622" alt="corax" src="https://github.com/user-attachments/assets/b4ef4eac-64a6-4ae4-aa5a-944081cd14a9" />
+
 
 ## Source Documents and Notes
 
