@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 bool debug = false;
 
@@ -248,10 +249,22 @@ unsigned char P = 0;
 }
 
 
+bool tdelay(float delay) {
+    time_t start_time = time(NULL);
+    time_t end_time = 0;
+    while(end_time - start_time < delay) {
+        end_time = time(NULL);
+    }
+    
+    return true;
+}
+
+
 // The 'decode' and 'excute' parts
 void interpreter(int instruction) {
 
-
+    bool delay_done = false;
+    delay_done = tdelay(0.025);
 
     /*
         Standard Chip-8 Instructions
@@ -285,7 +298,7 @@ void interpreter(int instruction) {
     unsigned char reg, reg2;
     unsigned char x,y,height,pixel,row,col;
     opcode = instruction & 0xF000;
-    rNibble = instruction & 0x0FFF;
+    rNibble = instruction & 0x000F;
     reg = (instruction & 0x0F00) >> 8; 
     reg2 = (instruction & 0x00F0) >> 4;
     data = instruction & 0x0FFF;
@@ -302,17 +315,20 @@ void interpreter(int instruction) {
     case 0x0000:
     
         switch(rNibble) {
-        // NoP
 
         // 0x00E0
         // Clear the screen    
         case 0x0000: 
             clear_screen();
+            if(debug) printf("CLS\n");
             break;
 
         // 0x00EE
         // Return from subroutine    
         case 0x000E: 
+            SP--;
+            if(debug) printf("Return from subroutine: 0x%04X\n", stack[SP]);
+            PC = stack[SP];
             break;
         }
 
@@ -335,7 +351,7 @@ void interpreter(int instruction) {
 
     // Set register VX
     case 0x6000:
-        V[reg]=rNibble;
+        V[reg]=data;
         if(debug) printf("LD V%X, %X\n", reg, rNibble);
         break;
     
@@ -345,6 +361,15 @@ void interpreter(int instruction) {
         if(debug) printf("ADD V%X, %X\n", reg, data);
         break;
 
+
+    // Compare VX and VY
+    // if VX != VY, skip next instruction
+        case 0x9000:   
+        if(V[reg] != V[reg2]) {
+            PC += 2;
+        }
+        if(debug) printf("SNE V%X, V%X\n", reg, reg2);
+        break;
     
     // Set I to supplied address
     case 0xA000:
@@ -392,18 +417,45 @@ void interpreter(int instruction) {
     
     // ..............................................
     
+        case 0xF000:
+                    
+            // Fx07 - LD Vx, DT
+            // Fx0A - LD Vx, K	
+            // Fx15 - LD DT, Vx
+            // Fx18 - LD ST, Vx
+            // Fx1E - ADD I, Vx
+            // Fx29 - LD F, Vx	
+            // Fx33 - LD B, Vx	
+            // Fx55 - LD [I], Vx
+            // Fx65 - LD Vx, [I]
+            // Fx75 - LD R, Vx
+            // Fx85 - LD Vx, R
+            
+            // 0xFX07
+            switch(rNibble) {
 
+            // 0xFx29: Set I to sprite location in memory as the font character in VX (0x0-0xF) 
+            case 0x29:
+                I = V[reg] * 0x5;
+                printf("Set I to sprite in V%X (0x%02X). Result(VX*5) = (0x%02X)\n", data, V[reg], V[reg] * 0x5);
+                break;
 
+            case 0x07:
+                V[reg] = Tdelay;
+                if(debug) printf("LD V%X, DT\n", reg);
+                break;
+            }
+            
 
 
     default:
         // Debug
-        if(debug) printf ("PC:%X Unhandled Instruction: Op:%X Reg:%X rNibble:%X Data:%X\n", PC, opcode, reg, rNibble, data);
+        if(debug) printf ("PC:%X \033[31mUnhandled Instruction\033[0m: 0x%04X Op:%X Reg:%X rNibble:%X Data:%X\n", PC, instruction, opcode, reg, rNibble, data);
         handled=false;
 
     }
 
-    if(handled) if(debug) printf ("PC:%X Success! Instruction: Op:%X Reg:%X rNibble:%X Data:%X\n", PC, opcode, reg, rNibble, data);
+    if(handled) if(debug) printf ("PC:%X Success! Instruction: 0x%04X Op:%X Reg:%X rNibble:%X Data:%X\n", PC, instruction, opcode, reg, rNibble, data);
 
     // This won't always be true
     // but for now we can just inc PC
@@ -588,7 +640,10 @@ int main(int argc, char *argv[]) {
         // for (int i = 0; i < argc; i++) {
         //     printf("%s\n", argv[i]);
         // }
-        if(argc == 3) auto_mode = false;
+        if(argc == 3 &&  strcmp(argv[2],"-1") == 0) {
+            auto_mode = false;
+            debug = true;
+        }
     }
     else
     {
@@ -619,7 +674,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(!auto_mode) {
-        debug = true;
+        
         while(c!=27) {
             printf("\n\rSINGLE STEP TEST\n\r");
             // ram[PC]=0xA2;
