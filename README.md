@@ -9,7 +9,12 @@ Right now I am using https://johnearnest.github.io/Octo/ to compile and decompil
 
 Got just enough of an interpreter to load and execute a program that displays a little man on screen (using emoji because running in command line terminal)
 
-<img width="1281" height="697" alt="image" src="https://github.com/user-attachments/assets/30593d42-2fb2-4658-9e79-8a98086e29f5" />
+<img width="1281" height="697" alt="sprite test" src="https://github.com/user-attachments/assets/30593d42-2fb2-4658-9e79-8a98086e29f5" />
+
+14 October 2025 Update: And [IBM logo test](https://github.com/Timendus/chip8-test-suite):
+
+<img width="1029" height="617" alt="ibm logo test" src="https://github.com/user-attachments/assets/44e71459-1246-44f3-9f5b-869c36ac08a4" />
+
 
 
 ## Source Documents and Notes
