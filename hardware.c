@@ -294,7 +294,7 @@ void interpreter(int instruction) {
     unsigned char rNibble;
     unsigned char reg, reg2;
     unsigned char x,y,height,pixel,row,col;
-    unsigned char low_byte;
+    unsigned char low_byte,flag;
     opcode = instruction & 0xF000;
     rNibble = instruction & 0x000F;
     reg = (instruction & 0x0F00) >> 8; 
@@ -382,6 +382,108 @@ void interpreter(int instruction) {
         V[reg] += low_byte;
         if(debug) printf("ADD V%X, %X\n", reg, data);
         break;
+
+
+
+        // PC:2D2 Unhandled Instruction: 0x8750 Op:8000 Reg:7 rNibble:0 Data:750
+        // PC:2EA Unhandled Instruction: 0x8761 Op:8000 Reg:7 rNibble:1 Data:761
+        // PC:302 Unhandled Instruction: 0x8762 Op:8000 Reg:7 rNibble:2 Data:762
+        // PC:31A Unhandled Instruction: 0x8763 Op:8000 Reg:7 rNibble:3 Data:763
+        // PC:338 Unhandled Instruction: 0x8764 Op:8000 Reg:7 rNibble:4 Data:764
+        // PC:350 Unhandled Instruction: 0x8765 Op:8000 Reg:7 rNibble:5 Data:765
+        // PC:368 Unhandled Instruction: 0x8767 Op:8000 Reg:7 rNibble:7 Data:767
+        // PC:37E Unhandled Instruction: 0x8666 Op:8000 Reg:6 rNibble:6 Data:666
+        // PC:394 Unhandled Instruction: 0x866E Op:8000 Reg:6 rNibble:E Data:66E
+        // PC:3D2 Unhandled Instruction: 0x8100 Op:8000 Reg:1 rNibble:0 Data:100
+        // PC:45A Unhandled Instruction: 0x8666 Op:8000 Reg:6 rNibble:6 Data:666
+        // PC:464 Unhandled Instruction: 0x8604 Op:8000 Reg:6 rNibble:4 Data:604
+        // PC:46A Unhandled Instruction: 0x8666 Op:8000 Reg:6 rNibble:6 Data:666
+        // PC:472 Unhandled Instruction: 0x866E Op:8000 Reg:6 rNibble:E Data:66E
+        // PC:474 Unhandled Instruction: 0x8666 Op:8000 Reg:6 rNibble:6 Data:666
+        // PC:47A Unhandled Instruction: 0x8666 Op:8000 Reg:6 rNibble:6 Data:666
+        // PC:47C Unhandled Instruction: 0x866E Op:8000 Reg:6 rNibble:E Data:66E
+        // PC:48C Unhandled Instruction: 0x8605 Op:8000 Reg:6 rNibble:5 Data:605
+        // PC:494 Unhandled Instruction: 0x8067 Op:8000 Reg:0 rNibble:7 Data:67
+        // PC:4A8 Unhandled Instruction: 0x80E0 Op:8000 Reg:0 rNibble:0 Data:E0
+
+    // 0x80000
+    case 0x8000:
+        switch(rNibble) {
+
+            // 8xy0 - LD Vx, Vy
+            // Set Vx = Vy.
+            // Stores the value of register Vy in register Vx.
+            case 0x0000:
+                V[reg] = V[reg2];
+                if(debug) printf("LD V%X, V%X\n", reg, reg2);
+                break;
+
+            // 8xy1 - OR Vx, Vy
+            // Set Vx = Vx OR Vy.
+            case 0x0001:
+                V[reg] = V[reg2] | V[reg];
+                if(debug) printf("OR V%X, V%X\n", reg, reg2);
+                break;
+
+            // 8xy2 - AND Vx, Vy
+            // Set Vx = Vx AND Vy.
+            case 0x0002:
+                V[reg] = V[reg2] & V[reg];
+                if(debug) printf("AND V%X, V%X\n", reg, reg2);
+                break;
+                
+            // 8xy3 - XOR Vx, Vy
+            // Set Vx = Vx XOR Vy.
+            case 0x0003:
+                V[reg] = V[reg2] ^ V[reg];
+                if(debug) printf("XOR V%X, V%X\n", reg, reg2);
+                break;
+            
+            // 8xy4 - ADD Vx, Vy
+            // Set Vx = Vx + Vy, set VF = carry.
+            case 0x0004:
+                V[reg] = V[reg2] + V[reg];
+                if(debug) printf("ADD V%X, V%X\n", reg, reg2);
+                break;
+                
+            // 8xy5 - SUB Vx, Vy
+            // Set Vx = Vx - Vy, set VF = NOT borrow.
+            case 0x0005:
+                V[reg] -= V[reg2] ;
+                if(debug) printf("SUB V%X, V%X\n", reg, reg2);
+                break;
+                
+            // 8xy6 - SHR Vx {, Vy}
+            // Set Vx = Vx SHR 1.
+            case 0x0006:
+                V[reg] = V[reg] >> 1;
+                if(debug) printf("SHR V%X\n", reg);
+                break;
+            
+            // 8xy7 - SUBN Vx, Vy
+            // Set Vx = Vy - Vx, set VF = NOT borrow.
+            case 0x0007:
+                V[reg] = V[reg2] - V[reg];
+                V[0xF] = 0;
+                if(debug) printf("SUBN V%X, V%X\n", reg, reg2);
+                break;
+                
+            // 8xyE - SHL Vx {, Vy}
+            // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+            case 0x000E:
+                V[reg] = V[reg2];
+                flag = V[reg2] >> 7;
+                V[reg] <<= 1;
+                V[0xF] = flag;
+                if(debug) printf("SHL V%X, V%X\n", reg, reg2);
+                break;
+                
+        }        
+        break;
+
+
+
+
 
 
     // Compare VX and VY
@@ -481,18 +583,63 @@ void interpreter(int instruction) {
             // 0xFX07
             switch(low_byte) {
 
+
+                case 0x07:
+                V[reg] = Tdelay;
+                if(debug) printf("LD V%X, DT\n", reg);
+                break;
+            
+                case 0x0A:
+                    V[reg] = keys[V[reg]];
+                    if(debug) printf("Waiting for key press for V%X\n", reg);
+                    break;
+
+                case 0x15:
+                    Tdelay = V[reg];
+                    if(debug) printf("LD DT, V%X\n", reg);
+                    break;
+
+                case 0x18:
+                    Tsound = V[reg];
+                    if(debug) printf("LD ST, V%X\n", reg);
+                    break;
+
+                case 0x1E:
+                    I += V[reg];
+                    if(debug) printf("ADD I, V%X\n", reg);
+                    break;
                 // 0xFx29: Set I to sprite location in memory as the font character in VX (0x0-0xF) 
                 case 0x29:
                     I = V[reg] * 0x5;
                     printf("Set I to sprite in V%X (0x%02X). Result(VX*5) = (0x%02X)\n", data, V[reg], V[reg] * 0x5);
                     break;
 
-                case 0x07:
-                    V[reg] = Tdelay;
-                    if(debug) printf("LD V%X, DT\n", reg);
+                // Fx33 - store binary-coded decimal representation of vX to memory at i, i + 1 and i + 2
+                case 0x33:
+                    ram[I] = V[reg] / 100;
+                    ram[I + 1] = (V[reg] % 100) / 10;
+                    ram[I + 2] = V[reg] % 10;
+                    if(debug) printf("LD B, V%X\n", reg);
                     break;
-                }
-                
+
+                case 0x55:
+                    for(int i = 0; i < reg; i++) {
+                        ram[I + i] = V[i];
+                    }
+                    if(debug) printf("LD [I], Vx\n");
+                    break;
+
+
+                // Fx65 - LD Vx, [I]
+                case 0x65:
+                    for(int i = 0; i < reg; i++) {
+                        V[i] = ram[I + i];
+                    }
+                    if(debug) printf("LD Vx, [I]\n");
+                    break;
+
+
+            }
             break;
 
     default:
