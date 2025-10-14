@@ -1,6 +1,19 @@
 # chip8ish
 Chip 8 interpreter written in C and probably more
 
+## Tools
+
+Right now I am using https://johnearnest.github.io/Octo/ to compile and decompile CHIP8 programs
+
+## Progress So Far
+
+Got just enough of an interpreter to load and execute a program that displays a little man on screen (using emoji because running in command line terminal)
+
+<img width="1281" height="697" alt="image" src="https://github.com/user-attachments/assets/30593d42-2fb2-4658-9e79-8a98086e29f5" />
+
+
+## Source Documents and Notes
+
 Using the following reference docs:
 * https://en.wikipedia.org/wiki/CHIP-8
 * http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#0.1
