@@ -501,7 +501,12 @@ void interpreter(int instruction) {
         if(debug) printf("LD I, %X\n", data);
         break;
 
-
+    // random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx
+    case 0xC000:
+        V[reg] = rand() % 255;
+        V[reg] &= low_byte;
+        if(debug) printf("RND V%X, %X\n", reg, low_byte);
+        break;
 
     
     // Draw a sprite
@@ -650,7 +655,7 @@ void interpreter(int instruction) {
 
     }
 
-    if(handled) if(debug) printf ("PC:%X Success! Instruction: 0x%04X Op:%X Reg:%X rNibble:%X Data:%X\n", PC, instruction, opcode, reg, rNibble, data);
+    if(handled && debug) printf ("PC:%X Success! Instruction: 0x%04X Op:%X Reg:%X rNibble:%X Data:%X\n", PC, instruction, opcode, reg, rNibble, data);
 
     // This won't always be true
     // but for now we can just inc PC
@@ -658,6 +663,11 @@ void interpreter(int instruction) {
 
 }
 
+void check_keys() {
+    for(int i = 0; i < 16; i++) {
+        if(keys[i]) V[0] = i;
+    }
+}
 
 void update_screen() {
     
@@ -867,6 +877,7 @@ int main(int argc, char *argv[]) {
         if(redraw) update_screen();
  
         // Check keys
+        check_keys();
 
     }
 
