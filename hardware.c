@@ -305,6 +305,11 @@ void interpreter(int instruction) {
     // For debugging we need to know if we caught the opcode
     bool handled = true;
 
+    // FIX: Most instructions advance PC by 2 at the end of this function.
+    // Jump/CALL/RET set PC to an absolute address instead — flag that so we
+    // don't add 2 on top (which caused JP loops to fall through into sprite data).
+    bool pc_modified = false;
+
     // NB: Only two opcodes affect the screen
     //     and need to set the draw flag
 
@@ -312,39 +317,54 @@ void interpreter(int instruction) {
     switch (opcode) {
 
     case 0x0000:
-    
-        switch(rNibble) {
 
-        // 0x00E0
-        // Clear the screen    
-        case 0x0000: 
+        // FIX: Match on the full low byte (0x00NN), not just the last nibble.
+        // Old code used rNibble, so 0x003E (sprite data) looked like RET (nibble E)
+        // and crashed when the stack was empty.
+        switch(low_byte) {
+
+        // 0x00E0 - Clear the screen
+        case 0xE0:
             clear_screen();
             if(debug) printf("CLS\n");
             break;
 
-        // 0x00EE
-        // Return from subroutine    
-        case 0x000E: 
-            SP--;
-            if(debug) printf("Return from subroutine: 0x%04X\n", stack[SP]);
-            PC = stack[SP];
+        // 0x00EE - Return from subroutine
+        case 0xEE:
+            // FIX: Guard against RET when nothing was CALLed (SP would underflow).
+            if(SP == 0) {
+                if(debug) printf("RET with empty stack at PC:0x%04X\n", PC);
+                handled = false;
+            } else {
+                SP--;
+                PC = stack[SP];
+                pc_modified = true;
+                if(debug) printf("Return from subroutine: 0x%04X\n", PC);
+            }
+            break;
+
+        default:
+            handled = false;
             break;
         }
         break;
 
 
-    // Jump    
-    case 0x1000: 
-        // DON'T add to stack just jump
+    // Jump
+    case 0x1000:
         PC = data;
+        pc_modified = true;
         if(debug) printf("JP: %X\n", PC);
         break;
 
-    // JSR
+    // CALL addr — push return address, then jump
     case 0x2000:
-        stack[SP] = PC;
+        // FIX: Push PC+2 (address of the next instruction), not PC itself.
+        // RET will load this value and must not add 2 again (see pc_modified).
+        stack[SP] = PC + 2;
         SP++;
         PC = data;
+        pc_modified = true;
         if(debug) printf("JSR: %X\n", PC);
         break;
 
@@ -657,9 +677,12 @@ void interpreter(int instruction) {
 
     if(handled && debug) printf ("PC:%X Success! Instruction: 0x%04X Op:%X Reg:%X rNibble:%X Data:%X\n", PC, instruction, opcode, reg, rNibble, data);
 
-    // This won't always be true
-    // but for now we can just inc PC
-    PC += 2;
+    // FIX: Only advance PC for "normal" instructions. Skip opcodes add +2 above
+    // when needed; combined with this +2 that skips one instruction (correct).
+    // JP/CALL/RET set pc_modified so we don't overwrite their target address.
+    if(!pc_modified) {
+        PC += 2;
+    }
 
 }
 
