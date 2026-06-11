@@ -647,17 +647,21 @@ void interpreter(int instruction) {
                     if(debug) printf("LD B, V%X\n", reg);
                     break;
 
+                // Fx55 - save V0 through Vx (inclusive) to memory at I
                 case 0x55:
-                    for(int i = 0; i < reg; i++) {
+                    // FIX: Must include Vx itself — use i <= reg, not i < reg.
+                    // Fx55 with x=5 saves V0,V1,V2,V3,V4,V5 (six registers).
+                    for(int i = 0; i <= reg; i++) {
                         ram[I + i] = V[i];
                     }
                     if(debug) printf("LD [I], Vx\n");
                     break;
 
 
-                // Fx65 - LD Vx, [I]
+                // Fx65 - load V0 through Vx (inclusive) from memory at I
                 case 0x65:
-                    for(int i = 0; i < reg; i++) {
+                    // FIX: Same inclusive range as Fx55 (Corax+ F6 test).
+                    for(int i = 0; i <= reg; i++) {
                         V[i] = ram[I + i];
                     }
                     if(debug) printf("LD Vx, [I]\n");
